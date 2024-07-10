@@ -4,6 +4,10 @@ import base64
 import matplotlib.pyplot as plt
 import yfinance as yf
 
+
+#disable warning
+st.set_option('deprecation.showPyplotGlobalUse', False)
+
 st.title('S&P 500 App')
 
 st.markdown("""
@@ -15,7 +19,7 @@ This app retrieves the list of the **S&P 500** (from Wikipedia) and its correspo
 st.sidebar.header('User Input Features')
 
 # Web scraping of S&P 500 data
-#
+
 @st.cache_data
 def load_data():
     url = 'https://en.wikipedia.org/wiki/List_of_S%26P_500_companies'
@@ -30,12 +34,24 @@ sector = df.groupby('GICS Sector')
 sorted_sector_unique = sorted( df['GICS Sector'].unique() )
 selected_sector = st.sidebar.multiselect('Sector', sorted_sector_unique, sorted_sector_unique)
 
-# Filtering data
-df_selected_sector = df[ (df['GICS Sector'].isin(selected_sector)) ]
 
-st.header('Display Companies in Selected Sector')
-st.write('Data Dimension: ' + str(df_selected_sector.shape[0]) + ' rows and ' + str(df_selected_sector.shape[1]) + ' columns.')
-st.dataframe(df_selected_sector)
+
+
+# Filtering data based on sector selection
+
+if selected_sector:
+    df_selected_sector = df[df['GICS Sector'].isin(selected_sector)]
+    st.header('Display Companies in Selected Sector')
+    st.write('Data Dimension: ' + str(df_selected_sector.shape[0]) + ' rows and ' + str(df_selected_sector.shape[1]) + ' columns.')
+    st.dataframe(df_selected_sector)
+else:
+    st.header('No sector selected')
+    st.write('Please select at least one sector from the sidebar.')
+    df_selected_sector = pd.DataFrame()
+
+
+
+
 
 # Download S&P500 data
 # https://discuss.streamlit.io/t/how-to-download-file-in-streamlit/1806
@@ -45,36 +61,89 @@ def filedownload(df):
     href = f'<a href="data:file/csv;base64,{b64}" download="SP500.csv">Download CSV File</a>'
     return href
 
-st.markdown(filedownload(df_selected_sector), unsafe_allow_html=True)
 
-# https://pypi.org/project/yfinance/
 
-data = yf.download(
-        tickers = list(df_selected_sector[:10].Symbol),
-        period = "ytd",
-        interval = "1d",
-        group_by = 'ticker',
-        auto_adjust = True,
-        prepost = True,
-        threads = True,
-        proxy = None
-    )
+# Only show the download link if df_selected_sector is not empty
+if not df_selected_sector.empty:
+    st.markdown(filedownload(df_selected_sector), unsafe_allow_html=True)
 
-# Plot Closing Price of Query Symbol
-def price_plot(symbol):
-  df = pd.DataFrame(data[symbol].Close)
-  df['Date'] = df.index
-  plt.fill_between(df.Date, df.Close, color='skyblue', alpha=0.3)
-  plt.plot(df.Date, df.Close, color='skyblue', alpha=0.8)
-  plt.xticks(rotation=90)
-  plt.title(symbol, fontweight='bold')
-  plt.xlabel('Date', fontweight='bold')
-  plt.ylabel('Closing Price', fontweight='bold')
-  return st.pyplot()
+    data = yf.download(
+            tickers = list(df_selected_sector[:10].Symbol),
+            period = "ytd",
+            interval = "1d",
+            group_by = 'ticker',
+            auto_adjust = True,
+            prepost = True,
+            threads = True,
+            proxy = None
+        )
+    # Plot Closing Price of Query Symbol
+    def price_plot(symbol):
+        df = pd.DataFrame(data[symbol].Close)
+        df['Date'] = df.index
+        plt.fill_between(df.Date, df.Close, color='skyblue', alpha=0.3)
+        plt.plot(df.Date, df.Close, color='skyblue', alpha=0.8)
+        plt.xticks(rotation=90)
+        plt.title(symbol, fontweight='bold')
+        plt.xlabel('Date', fontweight='bold')
+        plt.ylabel('Closing Price', fontweight='bold')
+        return st.pyplot()
+    
+    num_company = st.sidebar.slider('Number of ' ' Companies to plot', 1, 5)
 
-num_company = st.sidebar.slider('Number of Companies', 1, 5)
+    if st.button('Show Plots'):
+        st.header('Stock Closing Price')
+        for i in list(df_selected_sector.Symbol)[:num_company]:
+            price_plot(i)
 
-if st.button('Show Plots'):
-    st.header('Stock Closing Price')
-    for i in list(df_selected_sector.Symbol)[:num_company]:
-        price_plot(i)
+else:
+    st.write("No data available for download or analysis.")
+    
+
+company_search = st.sidebar.text_input('Search for specific companies (comma separated)', 'ibm, Oracle')
+
+# Filtering data based on company search
+if company_search:
+    search_list = [company.strip() for company in company_search.split(',')]
+    df_selected_company = df[df['Security'].str.contains('|'.join(search_list), case=False, na=False)]
+    if not df_selected_company.empty:
+        st.header('Search Results')
+        st.write('Data Dimension: ' + str(df_selected_company.shape[0]) + ' rows and ' + str(df_selected_company.shape[1]) + ' columns.')
+        st.dataframe(df_selected_company)
+        st.markdown(filedownload(df_selected_company), unsafe_allow_html=True)
+
+        data = yf.download(
+                tickers = list(df_selected_company[:10].Symbol),
+                period = "ytd",
+                interval = "1d",
+                group_by = 'ticker',
+                auto_adjust = True,
+                prepost = True,
+                threads = True,
+                proxy = None
+            )
+    else:
+        st.write('No matching companies found.')
+
+   # Plot Closing Price of Query Symbol
+    def price_plot(symbol):
+        df = pd.DataFrame(data[symbol].Close)
+        df['Date'] = df.index
+        plt.fill_between(df.Date, df.Close, color='skyblue', alpha=0.3)
+        plt.plot(df.Date, df.Close, color='skyblue', alpha=0.8)
+        plt.xticks(rotation=90)
+        plt.title(symbol, fontweight='bold')
+        plt.xlabel('Date', fontweight='bold')
+        plt.ylabel('Closing Price', fontweight='bold')
+        return st.pyplot()
+    
+
+
+    if st.button('Show Plots from selected companies'):
+        st.header('Stock Closing Price')
+        for symbol in df_selected_company['Symbol']:
+            price_plot(symbol)
+
+
+st.sidebar.markdown("---")
+st.sidebar.markdown("Created by [Josue Holguin](http://www.linkedin.com/in/josue-holguin-13694324b)")
