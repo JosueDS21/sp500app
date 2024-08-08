@@ -5,8 +5,7 @@ import matplotlib.pyplot as plt
 import yfinance as yf
 
 
-#disable warning
-st.set_option('deprecation.showPyplotGlobalUse', False)
+
 
 st.title('S&P 500 App')
 
