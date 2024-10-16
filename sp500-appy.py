@@ -5,9 +5,6 @@ import matplotlib.pyplot as plt
 import yfinance as yf
 import streamlit.components.v1 as components
 
-
-
-
 st.title('S&P 500 App')
 
 st.markdown("""
