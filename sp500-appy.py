@@ -146,3 +146,8 @@ if company_search:
 
 st.sidebar.markdown("---")
 st.sidebar.markdown("Created by [Josue Holguin](http://www.linkedin.com/in/josue-holguin-13694324b)")
+
+
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5145863563085320"
+     crossorigin="anonymous"></script>
+
