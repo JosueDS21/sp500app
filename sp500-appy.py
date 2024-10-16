@@ -3,6 +3,7 @@ import pandas as pd
 import base64
 import matplotlib.pyplot as plt
 import yfinance as yf
+import streamlit.components.v1 as components
 
 
 
@@ -147,7 +148,10 @@ if company_search:
 st.sidebar.markdown("---")
 st.sidebar.markdown("Created by [Josue Holguin](http://www.linkedin.com/in/josue-holguin-13694324b)")
 
+# Insert the AdSense code using st.components.v1.html
+adsense_code = """<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5145863563085320"
+     crossorigin="anonymous"></script>"""
 
-<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5145863563085320"
-     crossorigin="anonymous"></script>
+# Display the ad in Streamlit using st.components.v1.html
+components.html(adsense_code, height=300) 
 
