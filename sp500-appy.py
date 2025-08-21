@@ -85,14 +85,14 @@ if not df_selected_sector.empty:
     data = download_yfinance_data(tickers_to_plot)
 
     # Plot Closing Price of Query Symbol (Corrected with Matplotlib subplots)
-    def price_plot(symbol):
+    def price_plot(symbol, plot_data):
         """
         Plots the closing price of a given stock symbol using the object-oriented approach.
         """
         # Create a figure and axis object
         fig, ax = plt.subplots(figsize=(10, 6))
 
-        df_symbol = pd.DataFrame(data[symbol].Close)
+        df_symbol = pd.DataFrame(plot_data[symbol].Close)
         df_symbol['Date'] = df_symbol.index
 
         # Use the 'ax' object for all plotting commands
@@ -117,7 +117,7 @@ if not df_selected_sector.empty:
         if not data.empty:
             for i in list(df_selected_sector.Symbol)[:num_company]:
                 if i in data.columns.get_level_values(0):
-                    price_plot(i)
+                    price_plot(i, data)
                 else:
                     st.warning(f"No data available for symbol: {i}")
         else:
@@ -144,7 +144,7 @@ if company_search:
             if not data_search.empty:
                 for symbol in df_selected_company['Symbol']:
                     if symbol in data_search.columns.get_level_values(0):
-                        price_plot(symbol)
+                        price_plot(symbol, data_search)
                     else:
                         st.warning(f"No data available for symbol: {symbol}")
             else:
