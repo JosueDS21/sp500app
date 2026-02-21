@@ -150,8 +150,8 @@ if company_search:
         st.write('No matching companies found.')
 
 # Footer and Adsense
-st.sidebar.markdown("---")
-st.sidebar.markdown("Created by [Josue Holguin](http://www.linkedin.com/in/josue-holguin-13694324b)")
+st.markdown("---")
+st.caption("Built using Python & Streamlit | © 2026 Josue Holguin")
 
 # Insert the AdSense code using st.components.v1.html
 adsense_code = """<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5145863563085320"
