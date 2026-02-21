@@ -4,8 +4,10 @@ import base64
 import matplotlib.pyplot as plt
 import yfinance as yf
 import streamlit.components.v1 as components
+from urllib.request import Request, urlopen
 
 # Set a page config for better display
+
 st.set_page_config(layout="wide")
 
 st.title('S&P 500 App')
@@ -27,8 +29,10 @@ def load_data():
     re-running the function every time the app is updated.
     """
     url = 'https://en.wikipedia.org/wiki/List_of_S%26P_500_companies'
-    html = pd.read_html(url, header=0)
-    df = html[0]
+    req = Request(url, headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'})
+    with urlopen(req) as response:
+        html = response.read()
+    df = pd.read_html(html, header=0)[0]
     return df
 
 # Load the data
@@ -41,9 +45,13 @@ selected_sector = st.sidebar.multiselect('Sector', sorted_sector_unique, sorted_
 # Filtering data based on sector selection
 df_selected_sector = df[df['GICS Sector'].isin(selected_sector)]
 
-st.header('Display Companies in Selected Sector')
-st.write(f'Data Dimension: {df_selected_sector.shape[0]} rows and {df_selected_sector.shape[1]} columns.')
-st.dataframe(df_selected_sector)
+# Show message when no sector selected
+if df_selected_sector.empty:
+    st.info("Please select at least one sector to start.")
+else:
+    st.header('Display Companies in Selected Sector')
+    st.write(f'Data Dimension: {df_selected_sector.shape[0]} rows and {df_selected_sector.shape[1]} columns.')
+    st.dataframe(df_selected_sector)
 
 # Download S&P500 data
 def filedownload(df_to_download):
@@ -61,55 +69,43 @@ if not df_selected_sector.empty:
 else:
     st.write("No data available for download or analysis.")
 
+# ----- Helper functions (always defined for use in sector and search sections) -----
+@st.cache_data(show_spinner=False)
+def download_yfinance_data(tickers):
+    """
+    Downloads stock data using yfinance. Caches the result.
+    """
+    if not tickers:
+        return pd.DataFrame()
+    return yf.download(
+        tickers=list(tickers),
+        period="ytd",
+        interval="1d",
+        group_by='ticker',
+        auto_adjust=True,
+        prepost=True,
+        threads=True
+    )
+
+def price_plot(symbol, plot_data):
+    """
+    Plots the closing price of a given stock symbol using the object-oriented approach.
+    """
+    fig, ax = plt.subplots(figsize=(10, 6))
+    df_symbol = pd.DataFrame(plot_data[symbol].Close)
+    df_symbol['Date'] = df_symbol.index
+    ax.fill_between(df_symbol.Date, df_symbol.Close, color='skyblue', alpha=0.3)
+    ax.plot(df_symbol.Date, df_symbol.Close, color='skyblue', alpha=0.8)
+    ax.set_title(f"Closing Price for {symbol}", fontweight='bold')
+    ax.set_xlabel('Date', fontweight='bold')
+    ax.set_ylabel('Closing Price', fontweight='bold')
+    plt.xticks(rotation=90)
+    st.pyplot(fig)
+
 # ----- Section for plotting based on selected sectors -----
 if not df_selected_sector.empty:
-    # Use st.cache_data for yfinance data loading as well
-    @st.cache_data(show_spinner=False)
-    def download_yfinance_data(tickers):
-        """
-        Downloads stock data using yfinance. Caches the result.
-        """
-        return yf.download(
-            tickers=list(tickers),
-            period="ytd",
-            interval="1d",
-            group_by='ticker',
-            auto_adjust=True,
-            prepost=True,
-            threads=True,
-            proxy=None
-        )
-
-    # Download data for the first 10 companies in the selected sectors
     tickers_to_plot = list(df_selected_sector.Symbol[:10])
     data = download_yfinance_data(tickers_to_plot)
-
-    # Plot Closing Price of Query Symbol (Corrected with Matplotlib subplots)
-    def price_plot(symbol, plot_data):
-        """
-        Plots the closing price of a given stock symbol using the object-oriented approach.
-        """
-        # Create a figure and axis object
-        fig, ax = plt.subplots(figsize=(10, 6))
-
-        df_symbol = pd.DataFrame(plot_data[symbol].Close)
-        df_symbol['Date'] = df_symbol.index
-
-        # Use the 'ax' object for all plotting commands
-        ax.fill_between(df_symbol.Date, df_symbol.Close, color='skyblue', alpha=0.3)
-        ax.plot(df_symbol.Date, df_symbol.Close, color='skyblue', alpha=0.8)
-
-        # Set title and labels using the ax object
-        ax.set_title(f"Closing Price for {symbol}", fontweight='bold')
-        ax.set_xlabel('Date', fontweight='bold')
-        ax.set_ylabel('Closing Price', fontweight='bold')
-        
-        # Rotate x-axis ticks
-        plt.xticks(rotation=90)
-        
-        # Display the plot
-        st.pyplot(fig)
-
     num_company = st.sidebar.slider('Number of Companies to plot', 1, len(tickers_to_plot))
     
     if st.button('Show Plots'):
