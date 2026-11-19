@@ -7,11 +7,11 @@ import re
 from io import StringIO
 from urllib.request import Request, urlopen
 
-# Set a page config for better display
-
-st.set_page_config(layout="wide")
-
-st.title('S&P 500 App')
+st.set_page_config(
+    page_title="S&P 500 App",
+    page_icon="📈",
+    layout="wide"
+)
 
 st.markdown("""
 This app retrieves the list of the **S&P 500** (from Wikipedia) and its corresponding **stock closing price** (year-to-date)!
