@@ -56,7 +56,7 @@ Then open [http://localhost:8501](http://localhost:8501) in your browser.
 
 The app is deployed on Streamlit Community Cloud:
 
-[**sp500-appypy.streamlit.app**](https://sp500-appypy-dbqcczub6j9irmghjt3siw.streamlit.app/)
+[**sp500-appypy.streamlit.app**]([https://sp500-appypy-dbqcczub6j9irmghjt3siw.streamlit.app/](https://sp500-app-jh.streamlit.app/))
 
 ## Project Structure
 
