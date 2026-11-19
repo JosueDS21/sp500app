@@ -3,7 +3,8 @@ import pandas as pd
 import base64
 import matplotlib.pyplot as plt
 import yfinance as yf
-import streamlit.components.v1 as components
+import re
+from io import StringIO
 from urllib.request import Request, urlopen
 
 # Set a page config for better display
@@ -31,8 +32,10 @@ def load_data():
     url = 'https://en.wikipedia.org/wiki/List_of_S%26P_500_companies'
     req = Request(url, headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'})
     with urlopen(req) as response:
-        html = response.read()
-    df = pd.read_html(html, header=0)[0]
+        html = response.read().decode('utf-8')
+    df = pd.read_html(StringIO(html), header=0)[0]
+    # Yahoo Finance uses '-' instead of '.' (e.g. BRK.B -> BRK-B)
+    df['Symbol'] = df['Symbol'].str.replace('.', '-', regex=False)
     return df
 
 # Load the data
@@ -106,7 +109,11 @@ def price_plot(symbol, plot_data):
 if not df_selected_sector.empty:
     tickers_to_plot = list(df_selected_sector.Symbol[:10])
     data = download_yfinance_data(tickers_to_plot)
-    num_company = st.sidebar.slider('Number of Companies to plot', 1, len(tickers_to_plot))
+    max_plots = len(tickers_to_plot)
+    if max_plots > 1:
+        num_company = st.sidebar.slider('Number of Companies to plot', 1, max_plots, min(5, max_plots))
+    else:
+        num_company = 1
     
     if st.button('Show Plots'):
         st.header('Stock Closing Price')
@@ -123,8 +130,12 @@ if not df_selected_sector.empty:
 company_search = st.sidebar.text_input('Search for specific companies (comma separated)', 'IBM, Oracle')
 
 if company_search:
-    search_list = [company.strip() for company in company_search.split(',')]
-    df_selected_company = df[df['Security'].str.contains('|'.join(search_list), case=False, na=False)]
+    search_list = [company.strip() for company in company_search.split(',') if company.strip()]
+    if search_list:
+        pattern = '|'.join(re.escape(c) for c in search_list)
+        df_selected_company = df[df['Security'].str.contains(pattern, case=False, na=False)]
+    else:
+        df_selected_company = df.iloc[0:0]
     
     if not df_selected_company.empty:
         st.header('Search Results')
@@ -149,11 +160,6 @@ if company_search:
     else:
         st.write('No matching companies found.')
 
-# Footer and Adsense
+# Footer
 st.markdown("---")
 st.caption("Built using Python & Streamlit | © 2026 Josue Holguin")
-
-# Insert the AdSense code using st.components.v1.html
-adsense_code = """<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5145863563085320"
-      crossorigin="anonymous"></script>"""
-components.html(adsense_code, height=300)
