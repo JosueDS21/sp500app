@@ -7,6 +7,9 @@ import re
 from io import StringIO
 from urllib.request import Request, urlopen
 
+
+st.title('S&P 500 App')
+
 st.set_page_config(
     page_title="S&P 500 App",
     page_icon="📈",
